@@ -36,6 +36,7 @@ static int * medoids (HunterView h, int * data, int ndata, int k) {
     for (i = 0; i < ndata; i++) {
         int cost = 0;
         for (j = 0; j < ndata; j++) {
+            //printf ("Added Distance: %d\n",  mDistance (h, data[i], data[j]));
             cost += mDistance (h, data[i], data[j]);
         }
 
@@ -45,7 +46,7 @@ static int * medoids (HunterView h, int * data, int ndata, int k) {
         }
     }
 
-    printf ("Step 6\n");
+    //printf ("Step 6\n");
 
     // build the rest of the starting medoids.
     int numMedoids = 1;
@@ -97,7 +98,7 @@ static int * medoids (HunterView h, int * data, int ndata, int k) {
         numMedoids++;
     }
 
-    printf ("Step 7\n");
+    //printf ("Step 7\n");
 
     // SWAP PHASE
     int done = FALSE;
@@ -150,7 +151,7 @@ static int * medoids (HunterView h, int * data, int ndata, int k) {
             }
         }
 
-        printf ("bestKhmm: %d\n", bestK);
+        //printf ("bestKhmm: %d\n", bestK);
 
         // if bestK < 0, then we should swap, otherwise theres
         // no reason to swap and we're done
@@ -160,7 +161,7 @@ static int * medoids (HunterView h, int * data, int ndata, int k) {
             done = TRUE;
         }
     }
-    printf ("Step 8");
+    //printf ("Step 8");
 
     free (D);
     free (E);
@@ -175,13 +176,13 @@ static void msgToHitList (char * message) {
 }
 static void hitListToMsg (char * hitList) {
     int i;
-    printf ("Step 16\n");
+    //printf ("Step 16\n");
     for (i = 0; i < MESSAGE_SIZE - 1; i++) {
         hitList[i] += HIT_LIST_ZERO;
     }
-    printf ("Step 17\n");
+    //printf ("Step 17\n");
     hitList[MESSAGE_SIZE-1] = '\0';
-    printf ("Step 18\n");
+    //printf ("Step 18\n");
 }
 
 static char * initHitList () {
@@ -350,13 +351,13 @@ static void updateHitList (HunterView h, int move, char * hitList, int currRound
             while (i <= m) {
                 updateHitList (h, getTrailMove(h, PLAYER_DRACULA, giveMeTheRound(h) - currRound + i), 
                                 newHitList, currRound - prevKnownRound - i);
-                i++;
+                i++;                   
             }
         } else {
             // otherwise we can just grab the hitlist from that many rounds
             // ago. We'll grab it from ol' Mina Harker because she had the latest
             // hitList from then.!
-            newHitList = getMessage (h, PLAYER_MINA_HARKER, currRound - n);
+            newHitList = getMessage (h, PLAYER_MINA_HARKER, currRound - n + 1);
             msgToHitList (newHitList);
         }
 
@@ -369,6 +370,8 @@ static void updateHitList (HunterView h, int move, char * hitList, int currRound
             }
 
             int isValid = FALSE;
+            
+            //printf ("SEETHIS: %d\n", mDistance(h, 17, 17));
 
             for (j = 0; j < NUM_MAP_LOCATIONS; j++) {
                 if (newHitList[LOCATIONS_START + j] && mDistance(h, i, j) <= 1) {
@@ -399,7 +402,7 @@ void decideHunterMove(HunterView gameState) {
     char * hitList;
     int hitListChanged = FALSE;
 
-    printf ("Here1 %d\n", mDistance(gameState, 70, 3));
+    //printf ("Here1 %d\n", mDistance(gameState, 70, 3));
 
     // The first thing we want is a hitlist, which is all the locations
     // that dracula could be right now. (plus some other information)
@@ -479,7 +482,7 @@ void decideHunterMove(HunterView gameState) {
                 if (!newLocation && whosTurn == PLAYER_LORD_GODALMING) {
                     hitListChanged = TRUE; 
                     updateHitList (gameState, getTrailMove (gameState, PLAYER_DRACULA, 0), 
-                                    hitList, currRound);
+                                    hitList, currRound - 1 );
                 }
 
                 // if we learnt something or not, the fact that we
@@ -498,15 +501,6 @@ void decideHunterMove(HunterView gameState) {
         }
     }
 
-    printf ("Here2 %d\n", mDistance(gameState, 70, 3));
-
-    int p; 
-    printf ("WHATS GOING ON: ");
-    for (p = 0; p < MESSAGE_SIZE; p++){
-        printf ("%d", hitList[p]);
-    }
-    printf ("\n");
-
     int desiredLocation;
 
     // if the hitlist has changed, we need to work out new places to go
@@ -517,13 +511,13 @@ void decideHunterMove(HunterView gameState) {
         // aim for the hunters to choose to go to cities in the hitlist such that
         // theyre well distributed.
 
-        printf ("Here3 %d\n", mDistance(gameState, 70, 3));
+        //printf ("Here3 %d\n", mDistance(gameState, 70, 3));
         int numDests = 0;
         int * possibleDests;
         if (hitList[DRACULA_IN_SEA]) {
             // for each location in the hitlist, find the port cities next to it.
             int neighbourPortCities[NUM_MAP_LOCATIONS] = {0};
-            printf ("Here4SEA %d\n", mDistance(gameState, 70, 3));
+            //printf ("Here4SEA %d\n", mDistance(gameState, 70, 3));
             int i;
             for (i = 0; i < NUM_MAP_LOCATIONS; i++) {
                 if (hitList[LOCATIONS_START + i]) {
@@ -555,12 +549,12 @@ void decideHunterMove(HunterView gameState) {
             }
         } else {
             // Count how many locations in the hitlist.
-            printf ("Here4LAND %d\n", mDistance(gameState, 70, 3));
+            //printf ("Here4LAND %d\n", mDistance(gameState, 70, 3));
             int i;
             for (i = 0; i < NUM_MAP_LOCATIONS; i++) {
                 if (hitList[LOCATIONS_START + i]) { numDests++; }
             }
-            printf ("Here4LAND2 %d\n", mDistance(gameState, 70, 3));
+            //printf ("Here4LAND2 %d\n", mDistance(gameState, 70, 3));
 
             // allocate enough memory
             possibleDests = malloc (sizeof (int) * numDests);
@@ -573,7 +567,7 @@ void decideHunterMove(HunterView gameState) {
                     j++;
                 }
             }  
-            printf ("Here4LAND3 %d\n", mDistance(gameState, 70, 3));
+            //printf ("Here4LAND3 %d\n", mDistance(gameState, 70, 3));
         }
 
 
@@ -587,7 +581,7 @@ void decideHunterMove(HunterView gameState) {
             dests = possibleDests;
         }
 
-        printf ("Here4 %d\n", mDistance(gameState, 70, 3));
+        //printf ("Here4 %d\n", mDistance(gameState, 70, 3));
 
         // So we have between 1 and 4 choices of desinations. Want each hunter
         // to choose to move to a destination such that
@@ -710,10 +704,7 @@ void decideHunterMove(HunterView gameState) {
     printf ("\n");
 
     hitListToMsg (hitList);
-    printf ("Here1 %d\n", mDistance(gameState, 70, 3));
+    //printf ("Here1 %d\n", mDistance(gameState, 70, 3));
    // printf ("\nMessage2: %s\n", hitList);
     registerBestPlay(idToAbbrev (desiredLocation), hitList);
 }
-
-
-// 
