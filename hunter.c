@@ -348,7 +348,7 @@ static void updateHitList (HunterView h, int move, char * hitList, int currRound
 
             int i = 1;
             while (i <= m) {
-                updateHitList (h, getTrailMove(h, PLAYER_DRACULA, prevKnownRound + i), 
+                updateHitList (h, getTrailMove(h, PLAYER_DRACULA, giveMeTheRound(h) - currRound + i), 
                                 newHitList, currRound - prevKnownRound - i);
                 i++;
             }
@@ -464,7 +464,7 @@ void decideHunterMove(HunterView gameState) {
                         // for every move made afterwards, update the hitlist.
                         int j = i - 1;
                         while (j >= 0) {
-                            updateHitList (gameState, dracTrail[j], hitList, currRound - j);
+                            updateHitList (gameState, dracTrail[j], hitList, currRound - (j+1));
                             j--;
                         }
                     }

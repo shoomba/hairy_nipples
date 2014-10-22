@@ -45,7 +45,7 @@ void decideDraculaMove(DracView gameState)
     } else {
         int depth = 1;
         bestMove * currBest;
-        while (depth < 3) {
+        while (depth < 5) {
             if (depth == 1) {
                 currBest = chooseBestMove (TRUE, gameState, NEG_INF, POS_INF, depth);
             } else {
@@ -167,7 +167,18 @@ static int * getPossibleMoves (int isDracula, DracView state, int * numMoves) {
 
 static int evalState (DracView state) 
 {
-    return howHealthyIs(state, PLAYER_DRACULA) + 3*shortestDistanceToHunter(state, whereIs (state, PLAYER_DRACULA));
+    int score = howHealthyIs(state, PLAYER_DRACULA) + 2 * shortestDistanceToHunter(state, whereIs (state, PLAYER_DRACULA));
+    
+    // punish dracula for going to castle dracula all the time
+    int i;
+    for (i = 0; i < TRAIL_SIZE - 2; i++) {
+        int loc = getTrailMove (state, PLAYER_DRACULA, i);
+        if (loc == CASTLE_DRACULA) {
+            score -= 10;
+        }
+    }
+
+    return score;
 }
 
 static int shortestDistanceToHunter (DracView state, int location) {
