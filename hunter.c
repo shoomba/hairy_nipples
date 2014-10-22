@@ -489,7 +489,7 @@ void decideHunterMove(HunterView gameState) {
                 // where the yet-to-move hunters are.
                 for (i = 0; i < NUM_PLAYERS - 1; i++) {
                     int hunterLoc = (i < whosTurn) ? getTrailMove (gameState, i, 0) : whereIs (gameState, i);
-                    if(hitList[LOCATIONS_START + hunterLoc]) {
+                    if(idToType(hunterLoc) == LAND && hitList[LOCATIONS_START + hunterLoc]) {
                         hitList[LOCATIONS_START + hunterLoc] = 0;
                         hitListChanged = TRUE; 
                     } 
@@ -534,6 +534,7 @@ void decideHunterMove(HunterView gameState) {
                     int j;
                     for (j = 0; j < numNearbyCities; j++) {
                         int c = nearbyCities[j];
+                        if (idToType (c) == SEA) {continue;}
                         if (!neighbourPortCities[c]) {
                             numDests++;
                             neighbourPortCities[c] = 1;
