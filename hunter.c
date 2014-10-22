@@ -696,7 +696,7 @@ void decideHunterMove(HunterView gameState) {
         desiredLocation = bestMove;
     }
 
-    //int p; 
+    int p; 
     printf ("WHATS GOING ON: ");
     for (p = 0; p < MESSAGE_SIZE; p++){
         printf ("%d", hitList[p]);
