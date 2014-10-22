@@ -373,7 +373,7 @@ LocationID *whereCanIgo(DracView currState, int *numLocations) {
     int numExtraMoves = 0;
     int extraMoves[5];
 
-    if (currState->dracula.canHide) {
+    if (currState->dracula.canHide && idToType (dracLocation) == LAND) {
         extraMoves[0] = HIDE;
         numExtraMoves++;
     } else if (currState->dracula.canDoubleBack) {
