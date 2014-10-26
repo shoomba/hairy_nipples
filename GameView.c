@@ -80,7 +80,7 @@ static void execDraculaPlay (GameView gameView, dracPlay * play) {
         move = DOUBLE_BACK_1 + n;
 
         // get the move in the trail
-        location = ListGet(gameView->players[PLAYER_DRACULA].trail, n);
+        location = ListGet(gameView->players[PLAYER_DRACULA].locations, n);
 
         if (location == CITY_UNKNOWN) {
             type = LAND;

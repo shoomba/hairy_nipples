@@ -12,6 +12,15 @@
 
 #define HUNTER_WIN  NEG_INF
 
+#define BLOOD_POINTS_WEIGHT         20   
+#define DISTANCE_WEIGHT             12
+#define IMM_VAMP_WEIGHT             20   
+#define SCORE_WEIGHT                0
+#define HUNTER_KNOWLEDGE_WEIGHT     2
+#define FUTURE_DEST_WEIGHT          7
+#define HIDE_WEIGHT 10
+#define DN_WEIGHT   15
+
 
 typedef struct bestMove {
     int move;
@@ -26,43 +35,18 @@ static int * getPossibleMoves (int isDracula, DracView state, int * numMoves);
 
 void decideDraculaMove(DracView gameState)
 {
-    if (giveMeTheRound (gameState) == 0) {
-        int bestMove;
-        int bestScore = NEG_INF;
-        int i;
-        for (i = 0; i < NUM_MAP_LOCATIONS; i++) {
-            if (idToType (i) == LAND && i != ST_JOSEPH_AND_ST_MARYS) {
-                int score = shortestDistanceToHunter (gameState, i);
-                if (score > bestScore) {
-                    bestMove = i;
-                    bestScore = score;
-                }
-            }
-        }
+    int maxDepth = (giveMeTheRound (gameState) == 0) ? 1 : 4;
+    bestMove * currBest;
 
-        registerBestPlay (moveToAbbrev (bestMove), "And so it begins...");
+    int depth = 1;
+    while (depth <= maxDepth) {
+        currBest = chooseBestMove (TRUE, gameState, NEG_INF, POS_INF, depth);
 
-    } else {
-        int depth = 1;
-        bestMove * currBest;
-        while (depth < 5) {
-            if (depth == 1) {
-                currBest = chooseBestMove (TRUE, gameState, NEG_INF, POS_INF, depth);
-            } else {
-                int prevScore = currBest->score;
-                free (currBest);
-                currBest = chooseBestMove (TRUE, gameState, prevScore - 10, prevScore + 10, depth);
-                /*if ((currBest->score < prevScore - 10) || (currBest->score > prevScore + 10)) {
-                    printf ("damn.");
-                    currBest = chooseBestMove (TRUE, gameState, NEG_INF, prevScore + 10, depth);
-                    free (currBest);
-                }*/
-            }
-            
-            registerBestPlay(moveToAbbrev (currBest->move), "Please don't find me :)");
-            printf ("Depth: %d\tMove: %d\tScore: %d\n", depth, currBest->move, currBest->score);
-            depth++;
-        }
+        registerBestPlay(moveToAbbrev (currBest->move), "Please don't find me :)");
+        printf ("Depth: %d\tMove: %d\tScore: %d\n", depth, currBest->move, currBest->score);
+        
+        free (currBest);
+        depth++;
     }
 }
 
@@ -75,11 +59,7 @@ static bestMove *chooseBestMove (int isDracula, DracView state, int alpha, int b
     // If dracula is dead then the hunters have won in this instance,
     // and there's no moves to be made. Alternatively if the depth has
     // been reached (depth = 0) then just evaluate the state and return;
-    if (howHealthyIs (state, PLAYER_DRACULA) <= 0) {
-        best->score = HUNTER_WIN;
-        best->move = NOWHERE;
-        return best;
-    } else if (depth == 0) {
+    if (depth == 0 || howHealthyIs (state, PLAYER_DRACULA) <= 0) {
         best->score = evalState (state);
         best->move = NOWHERE;
         return best;
@@ -105,7 +85,6 @@ static bestMove *chooseBestMove (int isDracula, DracView state, int alpha, int b
         if (possibleMoves[i] == -1) {continue;}
         // simulate the gamestate caused by current move we're trying
         state = simulateMove (state, possibleMoves[i]);
-
         
         // generate best response
         if (isDracula) {
@@ -114,16 +93,17 @@ static bestMove *chooseBestMove (int isDracula, DracView state, int alpha, int b
             reply = chooseBestMove (giveMeTheTurn (state) == PLAYER_DRACULA, 
                                     state, alpha, beta, depth);
         }
-        //printf ("Depth: %d\t Score: %d", depth, reply->score);
+        
+        //printf ("Loc: %d\t Score: %d\n", possibleMoves[i], reply->score);
         // undo the gamestate changes
         state = undoMove (state);
 
         // chose the move that maximises our score if dracula
         // and minimises if hunter
-        if (isDracula && reply->score > best->score) {
+        if (isDracula && reply->score >= best->score) {
             best->move = possibleMoves[i];
             alpha = best->score = reply->score;
-        } else if (!isDracula && reply->score < best->score) {
+        } else if (!isDracula && reply->score <= best->score) {
             best->move = possibleMoves[i];
             beta = best->score = reply->score;
         }
@@ -135,6 +115,8 @@ static bestMove *chooseBestMove (int isDracula, DracView state, int alpha, int b
     }
 
     free (possibleMoves);
+    
+    //printf ("Player: %d, BestMove: %d\n", giveMeTheTurn(state), best->move);
 
     return best;
 }
@@ -167,16 +149,62 @@ static int * getPossibleMoves (int isDracula, DracView state, int * numMoves) {
 
 static int evalState (DracView state) 
 {
-    int score = howHealthyIs(state, PLAYER_DRACULA) + 2 * shortestDistanceToHunter(state, whereIs (state, PLAYER_DRACULA));
-    
-    // punish dracula for going to castle dracula all the time
+    int dracHealthScore = howHealthyIs (state, PLAYER_DRACULA);
+    int shortestDistance = shortestDistanceToHunter(state, whereIs (state, PLAYER_DRACULA));
+    int isVampAlive = (getVampState (state) != NOWHERE);
+    int currScore = GAME_START_SCORE - giveMeTheScore (state);
+
+    int numFutureDestinations;
+    int * futureDestinations = whereCanIgo(state, &numFutureDestinations);
+    free (futureDestinations);
+
+    int hideBonus = 0;
+    int DBbonus = 0;
     int i;
-    for (i = 0; i < TRAIL_SIZE - 2; i++) {
-        int loc = getTrailMove (state, PLAYER_DRACULA, i);
-        if (loc == CASTLE_DRACULA) {
-            score -= 10;
+    for (i = 0; i < numFutureDestinations; i++) {
+        if (futureDestinations[i] == HIDE) {
+            hideBonus = 1;
+        } else if (futureDestinations[i] >= DOUBLE_BACK_1 &&
+                    futureDestinations[i] <= DOUBLE_BACK_5) {
+            DBbonus = 1;
         }
     }
+
+
+    int whatHuntersKnow = 0;
+    int j, k;
+    for (i = 0; i < TRAIL_SIZE; i++) {
+        int isLocationKnown = 0;
+        int dracMove = getTrailMove (state, PLAYER_DRACULA, i);
+        if (dracMove == UNKNOWN_LOCATION) break;
+
+        for (j = i; j >= 0; j--) {
+            for (k = 0; k < NUM_PLAYERS - 1; k++) {
+                int hunterMove = getTrailMove (state, k, j);
+                if (hunterMove == dracMove) {
+                    isLocationKnown = 1;
+                    whatHuntersKnow++;
+                    break;
+                }
+            }
+
+            if (isLocationKnown) { break; }
+        }
+    }
+
+    if (dracHealthScore > 40) {
+        dracHealthScore = 40;
+    }
+
+    int score = BLOOD_POINTS_WEIGHT * dracHealthScore +
+                DISTANCE_WEIGHT * shortestDistance +
+                IMM_VAMP_WEIGHT * isVampAlive +
+                SCORE_WEIGHT * currScore +
+                (FUTURE_DEST_WEIGHT * numFutureDestinations) -
+                HUNTER_KNOWLEDGE_WEIGHT * whatHuntersKnow +
+                HIDE_WEIGHT * hideBonus +
+                DN_WEIGHT * DBbonus;
+
 
     return score;
 }

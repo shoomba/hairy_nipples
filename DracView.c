@@ -79,6 +79,10 @@ int getTrailMove (DracView state, int player, int n) {
     }
 }
 
+int getVampState (DracView state) {
+    return state->immVampLoc;
+}
+
 DracView simulateMove (DracView prevState, int move) {
     DracView newState = malloc (sizeof (struct dracView));
      //printf ("YOYOM: %d\n", move);
@@ -331,8 +335,21 @@ LocationID *whereCanIgo(DracView currState, int *numLocations) {
     int dracLocation = ListGet (currState->dracula.locations, 0);
     *numLocations = 0;
 
+    // If dracula is nowhere (ie, round is zero) then return
+    // every location except not sea ones, screw them.
     if (dracLocation == NOWHERE) {
-        return NULL;
+        *numLocations = NUM_LAND_LOCATIONS;
+        int * possibleDests = malloc (sizeof(int) * NUM_LAND_LOCATIONS);
+
+        int i, j = 0;
+        for (i = 0; i < NUM_MAP_LOCATIONS; i++) {
+            if (idToType (i) == LAND) {
+                possibleDests[j] = i;
+                j++;
+            }
+        }
+        
+        return possibleDests;
     }
 
     // first get everywhere that dracula can travel to by road

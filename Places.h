@@ -116,6 +116,9 @@ typedef int LocationID;
 #define UNKNOWN_LOCATION        -1
 #define NOWHERE                 UNKNOWN_LOCATION
 
+#define NUM_SEA_LOCATIONS       10
+#define NUM_LAND_LOCATIONS      61
+
 
 // given a Place number, return its name
 char *idToName(int place);

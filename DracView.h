@@ -126,6 +126,8 @@ LocationID *whereCanIgo(DracView currentView, int *numLocations);
 LocationID *whereCanTheyGo(DracView currentView, int *numLocations,
                            PlayerID player);
 
+int getVampState (DracView state);
+
 int mDistance (DracView d, int i, int j);
 DracView simulateMove (DracView prevState, int move);
 DracView undoMove (DracView currState);
